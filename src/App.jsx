@@ -6,6 +6,8 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import CreateExam from './pages/Teacher/CreateExam';
+import ManageClasses from './components/admin/ManageClasses';
+import ManageTeachers from './components/admin/ManageTeachers';
 // import TeacherDashboard from './pages/TeacherDashboard';
 // import CreateExam from './pages/CreateExam';
 
@@ -44,6 +46,8 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           
+          <Route path="/admin/classes" element={<ManageClasses />} />
+          <Route path="/admin/teachers" element={<ManageTeachers />} />
           {/* TEACHER ROUTES */}
           {/* <Route path="/teacher" element={<TeacherDashboard />} /> */}
           <Route path="/exam/create" element={<CreateExam />} />

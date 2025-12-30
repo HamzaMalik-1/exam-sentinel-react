@@ -8,29 +8,47 @@ import {
   BookOpen, 
   Award, 
   User, 
-  LogOut 
+  LogOut, 
+  UserCog,
+  School
 } from 'lucide-react';
 
 const Sidebar = () => {
   // 1. Get User Role from Storage (Default to student if null)
-  const role =  'teacher';
+  const role =  'admin';
 //   const role = localStorage.getItem('userRole') || 'student';
 
   // 2. Define Menu Config (Role-Based)
-  const MENU_ITEMS = {
-    teacher: [
-      { label: 'Dashboard', path: '/teacher', icon: LayoutDashboard },
-      { label: 'Create Exam', path: '/exam/create', icon: PlusCircle },
-      { label: 'Exam Reports', path: '/teacher/reports', icon: FileText }, // Placeholder
-      { label: 'Settings', path: '/settings', icon: Settings },
-    ],
-    student: [
-      { label: 'Dashboard', path: '/student', icon: LayoutDashboard },
-      { label: 'My Exams', path: '/student/exams', icon: BookOpen }, // Placeholder
-      { label: 'Results', path: '/student/results', icon: Award },   // Placeholder
-      { label: 'Profile', path: '/profile', icon: User },
-    ]
-  };
+ const MENU_ITEMS = {
+  admin: [
+    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { 
+      label: 'Manage Classes', 
+      path: '/admin/classes', 
+      icon: School,
+      // Logic: This page will handle Creating Classes & Assigning Teachers
+    },
+    { 
+      label: 'Manage Teachers', 
+      path: '/admin/teachers', 
+      icon: UserCog,
+      // Logic: This page will handle Teacher CRUD (Create, Read, Update, Delete)
+    },
+    { label: 'Settings', path: '/settings', icon: Settings },
+  ],
+  teacher: [
+    { label: 'Dashboard', path: '/teacher', icon: LayoutDashboard },
+    { label: 'Create Exam', path: '/exam/create', icon: PlusCircle },
+    { label: 'Exam Reports', path: '/teacher/reports', icon: FileText },
+    { label: 'Settings', path: '/settings', icon: Settings },
+  ],
+  student: [
+    { label: 'Dashboard', path: '/student', icon: LayoutDashboard },
+    { label: 'My Exams', path: '/student/exams', icon: BookOpen },
+    { label: 'Results', path: '/student/results', icon: Award },
+    { label: 'Profile', path: '/profile', icon: User },
+  ]
+};
 
   // 3. Select the correct menu
   const menuToRender = MENU_ITEMS[role] || MENU_ITEMS['student'];
