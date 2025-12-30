@@ -9,8 +9,10 @@ import CreateExam from './pages/Teacher/CreateExam';
 import ManageClasses from './components/admin/ManageClasses';
 import ManageTeachers from './components/admin/ManageTeachers';
 import ExamList from './pages/Teacher/ExamList';
-import ExamResults from './components/teacher/ExamResults';
+// import ExamResults from './pages/Teacher/ExamResults';
 import ClassResultDetails from './pages/Teacher/ClassResultDetails';
+import ExamResults from './pages/Teacher/ExamResults';
+import AssignExam from './pages/Teacher/AssignExam';
 // import TeacherDashboard from './pages/TeacherDashboard';
 // import CreateExam from './pages/CreateExam';
 
@@ -56,6 +58,7 @@ function App() {
           <Route path="/exam/create" element={<CreateExam />} />
           <Route path="/teacher/exams" element={<ExamList />} />
           <Route path="/teacher/result" element={<ExamResults />} />
+          <Route path="/teacher/assign" element={<AssignExam />} />
           <Route path="/teacher/result/:resultId" element={<ClassResultDetails />} />
 
           

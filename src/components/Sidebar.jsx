@@ -10,7 +10,8 @@ import {
   User, 
   LogOut, 
   UserCog,
-  School
+  School,
+  Calendar
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -21,7 +22,7 @@ const Sidebar = () => {
   // 2. Define Menu Config (Role-Based)
  const MENU_ITEMS = {
   admin: [
-    { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    // { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { 
       label: 'Manage Classes', 
       path: '/admin/classes', 
@@ -34,14 +35,15 @@ const Sidebar = () => {
       icon: UserCog,
       // Logic: This page will handle Teacher CRUD (Create, Read, Update, Delete)
     },
-    { label: 'Settings', path: '/settings', icon: Settings },
+    // { label: 'Settings', path: '/settings', icon: Settings },
   ],
   teacher: [
-    { label: 'Dashboard', path: '/teacher', icon: LayoutDashboard },
+    // { label: 'Dashboard', path: '/teacher', icon: LayoutDashboard },
     { label: 'Manage Exams', path: '/teacher/exams', icon: BookOpen },
     // { label: 'Create Exam', path: '/exam/create', icon: PlusCircle },
     { label: 'Exam Result', path: '/teacher/result', icon: FileText },
-    { label: 'Settings', path: '/settings', icon: Settings },
+    { label: 'Assign Exam', path: '/teacher/assign', icon: Calendar },
+    // { label: 'Settings', path: '/settings', icon: Settings },
   ],
   student: [
     { label: 'Dashboard', path: '/student', icon: LayoutDashboard },
