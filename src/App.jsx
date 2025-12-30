@@ -6,13 +6,17 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import CreateExam from './pages/Teacher/CreateExam';
-import ManageClasses from './components/admin/ManageClasses';
-import ManageTeachers from './components/admin/ManageTeachers';
+
 import ExamList from './pages/Teacher/ExamList';
 // import ExamResults from './pages/Teacher/ExamResults';
 import ClassResultDetails from './pages/Teacher/ClassResultDetails';
 import ExamResults from './pages/Teacher/ExamResults';
 import AssignExam from './pages/Teacher/AssignExam';
+import ManageClasses from './pages/admin/ManageClasses';
+import ManageTeachers from './pages/admin/ManageTeachers';
+import StudentExams from './pages/student/StudentExams';
+import ExamIntro from './pages/student/ExamIntro';
+import TakeExam from './pages/student/TakeExam';
 // import TeacherDashboard from './pages/TeacherDashboard';
 // import CreateExam from './pages/CreateExam';
 
@@ -65,6 +69,10 @@ function App() {
           {/* STUDENT ROUTES */}
           {/* <Route path="/student" element={<StudentDashboard />} /> */}
           {/* <Route path="/exam/:id" element={<ExamPage />} /> */}
+          
+<Route path="/student/exam/:id/intro" element={<ExamIntro />} />
+<Route path="/student/exams" element={<StudentExams />} />
+<Route path="/student/exam/:id/start" element={<TakeExam />} />
 
         </Route>
 
