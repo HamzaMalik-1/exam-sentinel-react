@@ -1,0 +1,62 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+// Import Layout & Pages
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import CreateExam from './pages/Teacher/CreateExam';
+// import TeacherDashboard from './pages/TeacherDashboard';
+// import CreateExam from './pages/CreateExam';
+
+// Placeholder Pages (Until we build them)
+const StudentDashboard = () => <div className="card-box"><h2 className="text-title">Student Dashboard</h2></div>;
+const ExamPage = () => <div className="card-box"><h2 className="text-title">Exam Interface</h2></div>;
+
+function App() {
+  // Theme Initialization
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) return savedTheme;
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        
+        {/* WRAPPER ROUTE: Applies Layout to everything inside */}
+        <Route element={<Layout theme={theme} toggleTheme={toggleTheme} />}>
+          
+          {/* PUBLIC ROUTES */}
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          
+          {/* TEACHER ROUTES */}
+          {/* <Route path="/teacher" element={<TeacherDashboard />} /> */}
+          <Route path="/exam/create" element={<CreateExam />} />
+          
+          {/* STUDENT ROUTES */}
+          {/* <Route path="/student" element={<StudentDashboard />} /> */}
+          {/* <Route path="/exam/:id" element={<ExamPage />} /> */}
+
+        </Route>
+
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

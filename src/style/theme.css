@@ -1,0 +1,181 @@
+/* src/theme.css */
+
+:root {
+  /* =========================================
+     1. LIGHT MODE (Academic Day)
+     ========================================= */
+  --bg-body: #f1f5f9;       /* Very light grey-blue (Easier on eyes than white) */
+  --bg-surface: #ffffff;    /* Pure white for cards */
+  --bg-input: #f8fafc;      /* Slightly off-white for inputs */
+  
+  --text-main: #1e293b;     /* Slate-900 (Softer than pure black) */
+  --text-muted: #64748b;    /* Slate-500 (Dark Grey) */
+  
+  --primary: #0f172a;       /* Deep Navy - Professional & Authoritative */
+  --accent: #2563eb;        /* Royal Blue - For Buttons/Links */
+  
+  /* Proctoring Status Colors */
+  --danger: #dc2626;        /* Deep Red (Cheating Alert) */
+  --success: #059669;       /* Emerald (Exam Submitted) */
+  --warning: #d97706;       /* Amber (Suspicious Behavior) */
+
+  --border-color: #e2e8f0;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 
+            0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Subtle shadow */
+}
+
+[data-theme='dark'] {
+  /* =========================================
+     2. DARK MODE (Night Focus)
+     ========================================= */
+  --bg-body: #020617;       /* Almost Black (Slate-950) */
+  --bg-surface: #0f172a;    /* Deep Navy Card */
+  --bg-input: #1e293b;      
+  
+  --text-main: #f8fafc;     /* Off-white (Slate-50) */
+  --text-muted: #94a3b8;    /* Slate-400 (Light Grey) <--- CRITICAL FOR DARK MODE */
+  
+  --primary: #f8fafc;       /* White (for headings in dark mode) */
+  --accent: #3b82f6;        /* Bright Blue (Visible on dark) */
+  
+  --danger: #ef4444;        /* Brighter Red */
+  --success: #10b981;       /* Brighter Green */
+  --warning: #f59e0b;       /* Brighter Orange */
+
+  --border-color: #1e293b;
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* =========================================
+   3. GLOBAL RESET & BOOTSTRAP OVERRIDES
+   ========================================= */
+body {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+/* Force headings to adapt to theme */
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+  color: var(--text-main) !important;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+p, div, li, label {
+  color: var(--text-main);
+}
+
+/* FIX: Ensure spans inside other elements inherit color by default */
+span {
+  color: inherit;
+}
+
+/* =========================================
+   4. COMPONENT STYLES
+   ========================================= */
+
+/* The "Card" Container */
+.card-box {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+}
+
+/* Professional Button Styles */
+.btn-primary {
+  background-color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Toggle Button */
+.btn-toggle {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-toggle:hover {
+  background-color: var(--bg-input);
+}
+
+/* Input Fields */
+input, select, textarea {
+  background-color: var(--bg-input) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
+  padding: 0.75rem;
+  border-radius: 8px;
+  width: 100%;
+  outline: none;
+}
+
+input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* =========================================
+   5. TEXT UTILITIES (FIXED)
+   ========================================= */
+
+/* Brand & Highlights */
+.text-brand {
+  color: var(--accent) !important;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* Standard Headings */
+.text-title {
+  color: var(--text-main) !important;
+  font-weight: 700;
+}
+
+/* FIX: Force .text-muted to use the variable, ignoring parent colors */
+.text-muted {
+  color: var(--text-muted) !important; 
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+/* Status Colors */
+.text-danger { color: var(--danger) !important; font-weight: 600; }
+.text-success { color: var(--success) !important; font-weight: 600; }
+.text-warning { color: var(--warning) !important; font-weight: 600; }
+
+/* Links */
+.link-text {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+.link-text:hover {
+  text-decoration: underline;
+}
