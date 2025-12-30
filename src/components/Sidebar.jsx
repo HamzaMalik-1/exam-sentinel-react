@@ -15,7 +15,7 @@ import {
 
 const Sidebar = () => {
   // 1. Get User Role from Storage (Default to student if null)
-  const role =  'admin';
+  const role =  'teacher';
 //   const role = localStorage.getItem('userRole') || 'student';
 
   // 2. Define Menu Config (Role-Based)
@@ -38,8 +38,9 @@ const Sidebar = () => {
   ],
   teacher: [
     { label: 'Dashboard', path: '/teacher', icon: LayoutDashboard },
-    { label: 'Create Exam', path: '/exam/create', icon: PlusCircle },
-    { label: 'Exam Reports', path: '/teacher/reports', icon: FileText },
+    { label: 'Manage Exams', path: '/teacher/exams', icon: BookOpen },
+    // { label: 'Create Exam', path: '/exam/create', icon: PlusCircle },
+    { label: 'Exam Result', path: '/teacher/result', icon: FileText },
     { label: 'Settings', path: '/settings', icon: Settings },
   ],
   student: [
