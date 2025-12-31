@@ -1,71 +1,52 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  BookOpen, 
-  Clock, 
-  Calendar, 
-  PlayCircle, 
-  CheckCircle, 
-  AlertCircle,
-  School
+  BookOpen, Clock, Calendar, PlayCircle, 
+  CheckCircle, AlertCircle, School
 } from "lucide-react";
-import { Card, Table, Button, Badge, Row, Col } from "react-bootstrap";
-
-// --- MOCK DATA ---
-const MOCK_STUDENT_EXAMS = [
-  { 
-    id: 101, 
-    className: "Grade 10 - A", 
-    testName: "Mid-Term Mathematics", 
-    timeLimit: 60, // minutes
-    startDate: "2023-12-30T09:00:00", // Past (Example)
-    endDate: "2025-12-31T23:00:00",   // Future (Active Window)
-    isExamContinue: true, 
-    isAttempted: false 
-  },
-  { 
-    id: 102, 
-    className: "Grade 10 - A", 
-    testName: "Physics Fundamentals", 
-    timeLimit: 45, 
-    startDate: "2025-01-01T10:00:00", // Future
-    endDate: "2025-01-01T14:00:00", 
-    isExamContinue: true, 
-    isAttempted: false 
-  },
-  { 
-    id: 103, 
-    className: "Grade 10 - A", 
-    testName: "English Grammar", 
-    timeLimit: 30, 
-    startDate: "2024-12-01T09:00:00", 
-    endDate: "2024-12-05T12:00:00", // Past (Expired)
-    isExamContinue: true, 
-    isAttempted: false 
-  },
-  { 
-    id: 104, 
-    className: "Grade 10 - A", 
-    testName: "Computer Science - React", 
-    timeLimit: 90, 
-    startDate: "2024-12-20T09:00:00", 
-    endDate: "2025-12-30T12:00:00", 
-    isExamContinue: true, 
-    isAttempted: true // Already done
-  },
-];
+import { Card, Table, Button, Badge, Spinner } from "react-bootstrap";
+import axiosInstance from "../../api/axiosInstance"; 
+import toast from 'react-hot-toast';
 
 const StudentExams = () => {
   const navigate = useNavigate();
+  const [exams, setExams] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Update time every minute to keep statuses accurate
+  // Fetch exams on component mount
   useEffect(() => {
+    fetchMyExams();
+    
+    // Update time every minute to keep statuses accurate for the UI
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // --- LOGIC: DETERMINE STATUS ---
+  /**
+   * Fetches assigned exams from the backend.
+   * Based on the Enrollment model to find classes the student belongs to.
+   */
+  const fetchMyExams = async () => {
+    try {
+      setIsLoading(true);
+      // Calls router.get('/my-exams', protect, getMyExams);
+      const res = await axiosInstance.get('/student/my-exams');
+      if (res.data.success) {
+        setExams(res.data.data);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      toast.error(error.response?.data?.message || "Failed to load exams");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Logic to determine the visual status of an exam based on the time window
+   * and the student's attempt history.
+   */
   const getExamStatus = (exam) => {
     const start = new Date(exam.startDate);
     const end = new Date(exam.endDate);
@@ -82,16 +63,17 @@ const StudentExams = () => {
       return { status: "MISSED", label: "Expired", variant: "danger", icon: AlertCircle };
     }
 
+    // Active window and not yet attempted
     if (currentTime >= start && currentTime <= end && exam.isExamContinue) {
       return { status: "ACTIVE", label: "Attempt Now", variant: "primary", icon: PlayCircle };
     }
 
-    // Fallback if examContinue is false but time is valid (e.g., paused by teacher)
+    // Default to paused if time window is valid but isExamContinue is false
     return { status: "PAUSED", label: "Paused", variant: "warning", icon: AlertCircle };
   };
 
   const handleAttempt = (examId) => {
-    // Navigate to Introduction Page
+    // Navigates to the intro page for the specific exam
     navigate(`/student/exam/${examId}/intro`);
   };
 
@@ -100,6 +82,14 @@ const StudentExams = () => {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container-fluid p-4">
@@ -124,12 +114,12 @@ const StudentExams = () => {
               </tr>
             </thead>
             <tbody>
-              {MOCK_STUDENT_EXAMS.length > 0 ? (
-                MOCK_STUDENT_EXAMS.map((exam) => {
+              {exams.length > 0 ? (
+                exams.map((exam) => {
                   const { status, label, variant, icon: Icon } = getExamStatus(exam);
                   
                   return (
-                    <tr key={exam.id}>
+                    <tr key={exam.assignmentId || exam.id}>
                       {/* Class Name */}
                       <td className="ps-4">
                          <div className="d-flex align-items-center gap-2 text-dark">
@@ -148,7 +138,7 @@ const StudentExams = () => {
                         </div>
                       </td>
 
-                      {/* Time Limit */}
+                      {/* Time Limit from Exam Model */}
                       <td>
                         <Badge bg="light" className="text-dark border fw-normal px-2 py-1">
                            <Clock size={12} className="me-1 mb-1" />
@@ -156,7 +146,7 @@ const StudentExams = () => {
                         </Badge>
                       </td>
 
-                      {/* Date Window */}
+                      {/* Start/End Windows from AssignedExam Model */}
                       <td>
                          <div className="d-flex flex-column small text-muted">
                             <div>Start: {formatDate(exam.startDate)}</div>
@@ -164,7 +154,7 @@ const StudentExams = () => {
                          </div>
                       </td>
 
-                      {/* ACTION BUTTON */}
+                      {/* Action Button: Dynamic based on status */}
                       <td className="text-end pe-4">
                         {status === "ACTIVE" ? (
                           <Button 
@@ -195,7 +185,7 @@ const StudentExams = () => {
               ) : (
                 <tr>
                   <td colSpan="5" className="text-center py-5 text-muted">
-                    No exams assigned to you yet.
+                    No exams assigned to you yet. Check your class enrollment.
                   </td>
                 </tr>
               )}
