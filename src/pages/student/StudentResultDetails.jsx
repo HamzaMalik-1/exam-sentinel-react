@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, 
-  Maximize2,
   CheckCircle,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  Info
 } from "lucide-react";
-import { Container, Card, Form, Button, Badge, Spinner } from "react-bootstrap";
+import { Container, Card, Form, Button, Badge, Spinner, Row, Col } from "react-bootstrap";
 import axiosInstance from "../../api/axiosInstance";
 import toast from 'react-hot-toast';
 
@@ -17,15 +17,12 @@ const StudentResultDetails = () => {
   const [resultData, setResultData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ Fixed Navigation Logic
   const handleGoBack = () => {
-    // Check if the role is stored as a plain string "teacher" or "student"
     const role = localStorage.getItem("userRole"); 
-    
     if (role === "teacher") {
-      navigate(-1); // Go back to the Class Results table
+      navigate(-1);
     } else {
-      navigate("/student/results"); // Go back to student's My Results
+      navigate("/student/results");
     }
   };
 
@@ -41,17 +38,16 @@ const StudentResultDetails = () => {
         setResultData(res.data.data);
       }
     } catch (error) {
-      console.error("Error fetching result details:", error);
       toast.error("Failed to load detailed report.");
-      handleGoBack(); // Fallback navigation on error
+      handleGoBack();
     } finally {
       setIsLoading(false);
     }
   };
 
-  const groupedQuestions = (resultData?.questions || resultData?.responses || []).reduce((groups, resp) => {
-    const typeLabel = resp.type === "open end" ? "Descriptive Questions" 
-                    : resp.type === "checkbox" ? "Multiple Selection" 
+  const groupedQuestions = (resultData?.responses || []).reduce((groups, resp) => {
+    const typeLabel = resp.questionType === "open end" || (!resp.options && resp.userAnswer) ? "Descriptive Questions" 
+                    : resp.options?.length > 0 && resp.type === "checkbox" ? "Multiple Selection" 
                     : "Multiple Choice";
     if (!groups[typeLabel]) groups[typeLabel] = [];
     groups[typeLabel].push(resp);
@@ -83,13 +79,13 @@ const StudentResultDetails = () => {
                   <ArrowLeft size={20} /> <span className="d-none d-md-inline">Back</span>
                </Button>
                <div className="vr bg-white opacity-50 mx-2" style={{ height: '24px' }}></div>
-               <h5 className="fw-bold m-0 text-truncate">{resultData.testName || resultData.exam?.title}</h5>
+               <h5 className="fw-bold m-0 text-truncate">{resultData.exam?.title || "Assessment Report"}</h5>
             </div>
             <div className="text-end">
                <small className="opacity-75 d-block text-uppercase fw-semibold" style={{ fontSize: "0.7rem" }}>Total Score</small>
                <span className="fw-bold fs-4">
-                 {(resultData.totalObtained || resultData.obtainedMarks || 0).toFixed(1)} 
-                 <span className="fs-6 opacity-75"> / {(resultData.totalMax || resultData.totalMarks || 0).toFixed(1)}</span>
+                 {(resultData.obtainedMarks || 0).toFixed(1)} 
+                 <span className="fs-6 opacity-75"> / {(resultData.totalMarks || 0).toFixed(1)}</span>
                </span>
             </div>
           </div>
@@ -99,52 +95,68 @@ const StudentResultDetails = () => {
       <Container className="py-5" style={{ maxWidth: "900px" }}>
         {Object.entries(groupedQuestions).map(([sectionTitle, questions]) => (
           <div key={sectionTitle} className="mb-5">
-            <div className="d-flex align-items-center mb-3">
-                <div className="bg-primary" style={{ width: "4px", height: "24px", borderRadius: "4px" }}></div>
-                <h5 className="fw-bold text-dark ms-2 mb-0">{sectionTitle}</h5>
-                <Badge bg="light" text="secondary" className="ms-3 border">{questions.length} Questions</Badge>
-            </div>
+            <h5 className="fw-bold text-dark mb-3 ps-2" style={{ borderLeft: "4px solid #1C437F" }}>{sectionTitle}</h5>
             
             <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
                 <Card.Body className="p-0">
                   {questions.map((resp, idx) => {
-                    const scoreColor = getScoreColor(resp.obtained || resp.obtainedMarks, resp.total || 10);
+                    const scoreColor = getScoreColor(resp.obtainedMarks, 1); // Assuming 1 mark per question
+                    
                     return (
                         <div key={resp._id || idx} className="p-4 bg-white border-bottom">
                             <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
                                 <h6 className="fw-bold text-dark lh-base mb-0 pt-1">
                                     <span className="text-muted me-2">{String(idx + 1).padStart(2, '0')}</span>
-                                    {resp.question || resp.questionText}
+                                    {resp.questionText}
                                 </h6>
                                 <Badge bg={`${scoreColor}-subtle`} text={scoreColor} className="px-3 py-2 border-0">
-                                    {resp.obtained ?? resp.obtainedMarks} / {resp.total || 10}
+                                    {resp.obtainedMarks} / 1
                                 </Badge>
                             </div>
 
                             <div className="ps-md-5 ms-md-2">
-                                {(resp.type === "radio" || resp.type === "Multiple Choice") && (
+                                {/* Logic for Multiple Choice / Selection */}
+                                {resp.options && resp.options.length > 0 ? (
                                     <div className="d-flex flex-column gap-2">
-                                        {resp.options?.map(opt => {
-                                            const isSelected = resp.userAnswer === opt;
-                                            const isCorrect = resp.obtained > 0 || resp.isCorrect;
-                                            const isWrong = isSelected && !isCorrect;
+                                        {resp.options.map(opt => {
+                                            const isSelected = Array.isArray(resp.userAnswer) ? resp.userAnswer.includes(opt) : resp.userAnswer === opt;
+                                            const isCorrect = Array.isArray(resp.correctAnswer) ? resp.correctAnswer.includes(opt) : resp.correctAnswer === opt;
+                                            
+                                            let variantClass = "border-light bg-light text-muted";
+                                            if (isCorrect) variantClass = "border-success bg-success bg-opacity-10 text-success fw-bold";
+                                            if (isSelected && !isCorrect) variantClass = "border-danger bg-danger bg-opacity-10 text-danger";
+
                                             return (
-                                                <div key={opt} className={`d-flex align-items-center justify-content-between p-2 rounded border ${isSelected ? (isWrong ? 'bg-danger bg-opacity-10 border-danger text-danger' : 'bg-primary bg-opacity-10 border-primary text-primary') : 'border-transparent'}`}>
-                                                    <Form.Check type="radio" label={opt} checked={isSelected} disabled className="mb-0 custom-disabled-check" />
-                                                    {isSelected && (isWrong ? <XCircle size={16} /> : <CheckCircle size={16} />)}
+                                                <div key={opt} className={`d-flex align-items-center justify-content-between p-2 rounded border ${variantClass}`}>
+                                                    <Form.Check 
+                                                      type={resp.type === "checkbox" ? "checkbox" : "radio"} 
+                                                      label={opt} 
+                                                      checked={isSelected} 
+                                                      disabled 
+                                                      className="mb-0 custom-disabled-check" 
+                                                    />
+                                                    {isCorrect && <CheckCircle size={16} className="text-success" />}
+                                                    {isSelected && !isCorrect && <XCircle size={16} className="text-danger" />}
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                )}
-
-                                {resp.type === "open end" && (
-                                    <div className="bg-light p-3 rounded-3 border text-secondary fst-italic mt-2">
-                                        <div className="d-flex align-items-start gap-2">
-                                            <HelpCircle size={16} className="mt-1 text-muted" />
-                                            <span>{resp.userAnswer || "No answer provided"}</span>
-                                        </div>
-                                    </div>
+                                ) : (
+                                    /* Logic for Descriptive (AI Checked) */
+                                    <Row className="g-3 mt-1">
+                                        <Col md={6}>
+                                            <div className="p-3 rounded-3 border bg-white h-100">
+                                                <small className="text-uppercase fw-bold text-muted d-block mb-2">Your Answer</small>
+                                                <p className="mb-0 small text-dark fst-italic">"{resp.userAnswer || "No answer provided"}"</p>
+                                            </div>
+                                        </Col>
+                                        <Col md={6}>
+                                            <div className="p-3 rounded-3 border border-success bg-success bg-opacity-10 h-100">
+                                                <small className="text-uppercase fw-bold text-success d-block mb-2">AI Suggested Correct Answer</small>
+                                                <p className="mb-0 small text-success fw-semibold">{resp.correctAnswer || "Suggested answer not available."}</p>
+                                            </div>
+                                        </Col>
+                                    </Row>
                                 )}
                             </div>
                         </div>
@@ -155,8 +167,8 @@ const StudentResultDetails = () => {
           </div>
         ))}
         <div className="text-center mt-5">
-          <Button variant="outline-primary" className="px-4 rounded-pill" onClick={handleGoBack}>
-            Go Back
+          <Button variant="primary" className="px-5 py-2 rounded-pill fw-bold shadow-sm" style={{ backgroundColor: "#1C437F" }} onClick={handleGoBack}>
+            Return to Dashboard
           </Button>
         </div>
       </Container>
@@ -166,6 +178,12 @@ const StudentResultDetails = () => {
               opacity: 1 !important;
               cursor: default;
           }
+          .bg-success-subtle { background-color: #d1e7dd !important; }
+          .bg-danger-subtle { background-color: #f8d7da !important; }
+          .bg-warning-subtle { background-color: #fff3cd !important; }
+          .text-success { color: #0f5132 !important; }
+          .text-danger { color: #842029 !important; }
+          .text-warning { color: #664d03 !important; }
       `}</style>
     </div>
   );
