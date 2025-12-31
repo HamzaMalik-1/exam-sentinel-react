@@ -20,6 +20,7 @@ import TakeExam from './pages/student/TakeExam';
 import StudentResultDetails from './pages/student/StudentResultDetails';
 import StudentResults from './pages/student/StudentResults';
 import { Toaster } from 'react-hot-toast';
+import StudentClasses from './pages/student/StudentClasses';
 // import TeacherDashboard from './pages/TeacherDashboard';
 // import CreateExam from './pages/CreateExam';
 
@@ -76,6 +77,7 @@ function App() {
           
 <Route path="/student/exam/:id/intro" element={<ExamIntro />} />
 <Route path="/student/exams" element={<StudentExams />} />
+<Route path="/student/class" element={<StudentClasses />} />
 <Route path="/student/exam/:id/start" element={<TakeExam />} />
 <Route path="/student/results" element={<StudentResults />} />
 <Route path="/student/results/:id" element={<StudentResultDetails />} />
