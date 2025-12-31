@@ -16,8 +16,8 @@ import {
 
 const Sidebar = () => {
   // 1. Get User Role from Storage (Default to student if null)
-  const role =  'teacher';
-  // const role = localStorage.getItem('userRole') || 'student';
+  // const role =  'teacher';
+  const role = localStorage.getItem('userRole') || 'student';
 
   // 2. Define Menu Config (Role-Based)
  const MENU_ITEMS = {
