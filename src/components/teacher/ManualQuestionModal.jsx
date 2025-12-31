@@ -12,9 +12,7 @@ const questionSchema = z.object({
   optionB: z.string().optional(),
   optionC: z.string().optional(),
   optionD: z.string().optional(),
-  answer: z.string().optional(),
 }).superRefine((data, ctx) => {
-  // Conditional Validation: Options A & B are required for Radio/Checkbox
   if (["Radio", "Checkbox"].includes(data.questionType)) {
     if (!data.optionA || data.optionA.trim() === "") {
       ctx.addIssue({
@@ -37,8 +35,6 @@ const ManualQuestionModal = ({
   show,
   setShow,
   handleAddQuestion,
-  // secId and setSecId are likely no longer needed if section is removed from payload,
-  // but kept here to prevent prop destructuring errors if parent still passes them.
   editQuestion,
   setEditQuestion,
   onEditSubmit,
@@ -59,7 +55,6 @@ const ManualQuestionModal = ({
       optionB: "",
       optionC: "",
       optionD: "",
-      answer: "",
     },
   });
 
@@ -71,23 +66,34 @@ const ManualQuestionModal = ({
       if (editQuestion) {
         setValue("question", editQuestion.question);
         
-        // Handle Question Type
-        const type = editQuestion.questionType || editQuestion.type;
-        const validType = ["Radio", "Checkbox", "Open end"].includes(type) 
-          ? type 
-          : (type === "Multiple Choice" ? "Radio" : "Open end");
-        setValue("questionType", validType);
+        // --- FIX: TYPE MATCHING LOGIC ---
+        // 1. Normalize the type from backend/state to lowercase
+        const incomingType = (editQuestion.questionType || editQuestion.type || "").toLowerCase();
+        
+        // 2. Map it to your specific <option> values ("Radio", "Checkbox", "Open end")
+        let matchedType = "Radio"; // Default fallback
+        if (incomingType.includes("checkbox")) {
+          matchedType = "Checkbox";
+        } else if (incomingType.includes("open")) {
+          matchedType = "Open end";
+        } else if (incomingType.includes("radio") || incomingType.includes("multiple")) {
+          matchedType = "Radio";
+        }
+        
+        setValue("questionType", matchedType);
 
-        // Handle Options
-        const opts = editQuestion.options ? editQuestion.options.split(',').map(s => s.trim()) : [];
+        // --- Handle Options ---
+        const opts = editQuestion.options 
+          ? (Array.isArray(editQuestion.options) 
+              ? editQuestion.options 
+              : editQuestion.options.split(',').map(s => s.trim())) 
+          : [];
+          
         setValue("optionA", opts[0] || "");
         setValue("optionB", opts[1] || "");
         setValue("optionC", opts[2] || "");
         setValue("optionD", opts[3] || "");
-
-        setValue("answer", editQuestion.answer || "");
       } else {
-        // Reset for Add Mode
         reset({
           questionType: "Radio",
           question: "",
@@ -95,7 +101,6 @@ const ManualQuestionModal = ({
           optionB: "",
           optionC: "",
           optionD: "",
-          answer: "",
         });
       }
     }
@@ -112,13 +117,10 @@ const ManualQuestionModal = ({
       .filter(opt => opt && opt.trim() !== "")
       .join(", ");
 
-    // --- PAYLOAD (Section Removed) ---
     const payload = {
-      // selectionId removed here
       question: data.question,
       questionType: data.questionType,
       options: combinedOptions,
-      answer: "",
     };
 
     if (editQuestion) {
@@ -132,7 +134,6 @@ const ManualQuestionModal = ({
 
   return (
     <Modal show={show} onHide={handleClose} centered size="lg" contentClassName="rounded-4 border-0">
-      {/* Header */}
       <Modal.Header className="px-4 border-0" style={{ backgroundColor: "#1C437F", borderTopLeftRadius: "1rem", borderTopRightRadius: "1rem" }}>
         <Modal.Title className="text-white fs-5 fw-semibold">
           {editQuestion ? "Edit Question" : "Add Question"}
@@ -142,11 +143,7 @@ const ManualQuestionModal = ({
       <Modal.Body className="p-0">
         <Form onSubmit={handleSubmit(onSubmit)}>
           <div className="p-4 mb-3">
-            
-            {/* Question Details Box */}
             <div className="p-4 rounded-3 mb-3" style={{ border: "1px solid #E3E3E3" }}>
-              
-              {/* Row 1: Type & Question */}
               <div className="row g-3 mb-3">
                 <div className="col-md-4">
                   <Form.Label className="fw-semibold">
@@ -176,7 +173,6 @@ const ManualQuestionModal = ({
                 </div>
               </div>
 
-              {/* Row 2: Options (Conditional) */}
               {questionType !== "Open end" && (
                 <div className="row g-3">
                    <div className="col-md-3">
@@ -217,7 +213,6 @@ const ManualQuestionModal = ({
               )}
             </div>
 
-            {/* Footer Buttons */}
             <div className="d-flex justify-content-end gap-3 mt-4">
               <button
                 type="button"
@@ -235,7 +230,6 @@ const ManualQuestionModal = ({
                 {editQuestion ? "Update" : "Add"}
               </button>
             </div>
-
           </div>
         </Form>
       </Modal.Body>
