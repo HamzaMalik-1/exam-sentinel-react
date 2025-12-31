@@ -19,6 +19,7 @@ import ExamIntro from './pages/student/ExamIntro';
 import TakeExam from './pages/student/TakeExam';
 import StudentResultDetails from './pages/student/StudentResultDetails';
 import StudentResults from './pages/student/StudentResults';
+import { Toaster } from 'react-hot-toast';
 // import TeacherDashboard from './pages/TeacherDashboard';
 // import CreateExam from './pages/CreateExam';
 
@@ -48,6 +49,7 @@ function App() {
 
   return (
     <BrowserRouter>
+    <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         
         {/* WRAPPER ROUTE: Applies Layout to everything inside */}
