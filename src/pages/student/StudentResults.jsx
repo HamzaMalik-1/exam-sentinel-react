@@ -1,61 +1,62 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  Award, 
   Search, 
   Calendar, 
-  CheckCircle,
   ChevronRight,
-  School,
-  FileText
+  School
 } from "lucide-react";
-import { Card, Table, Form, Badge, InputGroup, Row, Col, ProgressBar } from "react-bootstrap";
-
-// --- MOCK DATA ---
-const MOCK_COMPLETED_EXAMS = [
-  { 
-    id: 101, 
-    className: "Grade 10 - A", 
-    testName: "Mid-Term Mathematics", 
-    submissionDate: "2024-12-15", 
-    obtainedMarks: 85, 
-    totalMarks: 100 
-  },
-  { 
-    id: 102, 
-    className: "Grade 10 - A", 
-    testName: "Physics Fundamentals", 
-    submissionDate: "2024-12-20", 
-    obtainedMarks: 42, 
-    totalMarks: 60 
-  },
-  { 
-    id: 103, 
-    className: "Grade 10 - A", 
-    testName: "English Grammar", 
-    submissionDate: "2024-12-10", 
-    obtainedMarks: 25, 
-    totalMarks: 50 
-  },
-];
+import { Card, Table, Form, InputGroup, ProgressBar, Spinner } from "react-bootstrap";
+import axiosInstance from "../../api/axiosInstance";
+import toast from 'react-hot-toast';
 
 const StudentResults = () => {
   const navigate = useNavigate();
+  const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // --- FETCH DATA FROM BACKEND ---
+  useEffect(() => {
+    fetchResults();
+  }, []);
+
+  const fetchResults = async () => {
+    try {
+      setIsLoading(true);
+      // Matches: router.get("/my-results", protect, getMyResults);
+      const res = await axiosInstance.get("/student/my-results");
+      if (res.data.success) {
+        setResults(res.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching results:", error);
+      toast.error("Failed to load your results history.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- SEARCH FILTERING ---
   const filteredResults = useMemo(() => {
-    return MOCK_COMPLETED_EXAMS.filter(item => 
+    return results.filter(item => 
       item.testName.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
-
-  const getPercentage = (obtained, total) => Math.round((obtained / total) * 100);
+  }, [searchQuery, results]);
 
   const getVariant = (percentage) => {
     if (percentage >= 80) return "success";
     if (percentage >= 50) return "primary";
     return "danger";
   };
+
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container-fluid p-4">
@@ -102,7 +103,7 @@ const StudentResults = () => {
             <tbody>
               {filteredResults.length > 0 ? (
                 filteredResults.map((exam) => {
-                  const percentage = getPercentage(exam.obtainedMarks, exam.totalMarks);
+                  const percentage = Math.round(exam.percentage);
                   const variant = getVariant(percentage);
 
                   return (
