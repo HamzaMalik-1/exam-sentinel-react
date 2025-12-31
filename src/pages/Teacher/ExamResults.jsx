@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Search, 
@@ -9,54 +9,43 @@ import {
   Calendar,
   BarChart3
 } from "lucide-react";
-import { Card, Table, Form, Badge, InputGroup, Row, Col, ProgressBar } from "react-bootstrap";
-
-// --- MOCK DATA ---
-const MOCK_CLASS_RESULTS = [
-  { 
-    resultId: 1, 
-    className: "Grade 10 - A", 
-    testName: "Mid-Term Mathematics", 
-    date: "2024-10-15", 
-    totalStudents: 30, 
-    averagePercentage: 78 
-  },
-  { 
-    resultId: 2, 
-    className: "Grade 10 - B", 
-    testName: "Mid-Term Mathematics", 
-    date: "2024-10-15", 
-    totalStudents: 28, 
-    averagePercentage: 62 
-  },
-  { 
-    resultId: 3, 
-    className: "Grade 11 - Science", 
-    testName: "Physics Fundamentals", 
-    date: "2024-11-02", 
-    totalStudents: 25, 
-    averagePercentage: 85 
-  },
-  { 
-    resultId: 4, 
-    className: "Grade 9 - C", 
-    testName: "English Grammar", 
-    date: "2024-11-05", 
-    totalStudents: 32, 
-    averagePercentage: 45 
-  },
-];
+import { Card, Table, Form, Badge, InputGroup, Row, Col, ProgressBar, Spinner } from "react-bootstrap";
+import axiosInstance from "../../api/axiosInstance";
+import toast from 'react-hot-toast';
 
 const ExamResults = () => {
   const navigate = useNavigate();
 
   // --- STATE ---
+  const [results, setResults] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
 
+  // --- FETCH LIVE DATA FROM BACKEND ---
+  useEffect(() => {
+    fetchClassResults();
+  }, []);
+
+  const fetchClassResults = async () => {
+    try {
+      setIsLoading(true);
+      // Matches the route: app.use('/api/teacher', teacherRouter) + /exam-results
+      const res = await axiosInstance.get("/teacher/exam-results");
+      if (res.data.success) {
+        setResults(res.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching class results:", error);
+      toast.error("Failed to load exam performance data.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // --- FILTERING LOGIC ---
   const filteredResults = useMemo(() => {
-    return MOCK_CLASS_RESULTS.filter((item) => {
+    return results.filter((item) => {
       const matchesSearch = 
         item.testName.toLowerCase().includes(searchQuery.toLowerCase()) || 
         item.className.toLowerCase().includes(searchQuery.toLowerCase());
@@ -65,12 +54,11 @@ const ExamResults = () => {
 
       return matchesSearch && matchesClass;
     });
-  }, [searchQuery, selectedClass]);
+  }, [searchQuery, selectedClass, results]);
 
   // --- HANDLERS ---
   const handleRowClick = (resultId) => {
-    // Navigate to the detail page (Student Individual Results)
-    // You will need to create a route like: /teacher/result/:id
+    // Keeps navigation same as requirement
     navigate(`/teacher/result/${resultId}`);
   };
 
@@ -82,7 +70,17 @@ const ExamResults = () => {
   };
 
   // Extract unique classes for dropdown
-  const uniqueClasses = [...new Set(MOCK_CLASS_RESULTS.map(item => item.className))];
+  const uniqueClasses = useMemo(() => {
+    return [...new Set(results.map(item => item.className))];
+  }, [results]);
+
+  if (isLoading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container-fluid p-4">
@@ -155,7 +153,7 @@ const ExamResults = () => {
                     key={item.resultId} 
                     onClick={() => handleRowClick(item.resultId)}
                     style={{ cursor: "pointer" }}
-                    className="hover-shadow-row" // Add this class in your CSS or use style
+                    className="hover-shadow-row"
                   >
                     {/* Class Name */}
                     <td className="ps-4">
