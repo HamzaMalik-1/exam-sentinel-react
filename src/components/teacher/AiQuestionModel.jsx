@@ -1,89 +1,67 @@
+// components/teacher/AiQuestionModal.js
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
-// import { useDispatch } from "react-redux";
-// import toast from "react-hot-toast";
+import toast from "react-hot-toast";
 import StarIcon from "../../assets/teacher/star.svg";
+import axiosInstance from "../../api/axiosInstance";
 
 const AiQuestionModal = ({
   show,
   setShow,
-  generateAIQuestion, // Redux action
-  questionLimit,      // Default limit from parent
-  companyId,
   handleAddQuestion,
-  description,        // Description from parent
+  description,
   setDescription,
-  section,            // Subject Name
-  sectionId,          // Subject ID
+  section, // Subject Name
   setLoading,
 }) => {
-  // const dispatch = useDispatch();
-  
-  // --- Local State ---
   const [localDescription, setLocalDescription] = useState("");
   const [localLimit, setLocalLimit] = useState(5);
-  const [questionType, setQuestionType] = useState("Radio"); // Default type
+  const [questionType, setQuestionType] = useState("Radio");
 
-  // --- Effect: Sync props to local state ---
   useEffect(() => {
     setLocalDescription(description || "");
-    setLocalLimit(questionLimit || 5);
-  }, [description, questionLimit]);
+  }, [description, show]);
 
-  // Logic: If parent provided a description, we lock this field.
   const isDescriptionLocked = !!(description && description.trim().length > 0);
 
-  const handleClose = () => {
-    setShow(false);
-  };
+  const handleClose = () => setShow(false);
 
   const handleGenerate = async () => {
     if (!localDescription.trim()) {
-      // toast.error("Please enter a description or topic for the AI.");
+      toast.error("Please enter a description or topic.");
       return;
     }
 
-    // Update parent description state if it wasn't locked
-    if (!isDescriptionLocked && setDescription) {
-      setDescription(localDescription);
-    }
-
-    // Prepare Payload with NEW local values
     const payload = {
-      companyId: companyId,
-      limit: localLimit,      
-      type: questionType,     // 'Radio', 'Checkbox', or 'Open end'
-      section: section, 
+      limit: localLimit,
+      type: questionType,
+      subject: section || "General",
       description: localDescription,
     };
 
-    console.log("Generating with payload:", payload);
-
     try {
-      handleClose(); 
       setLoading(true);
+      handleClose();
 
-      // --- SIMULATED DISPATCH (Replace with your actual dispatch) ---
-      // const response = await dispatch(generateAIQuestion(payload));
-      
-      // MOCK RESPONSE FOR DEMO - Remove in production
-      const response = { success: true, data: [] }; 
+      const response = await axiosInstance.post('/exams/generate-ai', payload);
 
-      if (response && response.success) {
-        // Logic to add questions (uncomment when integrating)
-        /* response.data.forEach((q) => {
+      if (response.data.success) {
+        const questions = response.data.data;
+        
+        questions.forEach((q) => {
           handleAddQuestion({
-            selectionId: sectionId,
             question: q.question,
             answer: q.answer,
             questionType: questionType, 
-            options: q.options,
+            options: q.options.join(", "), // Convert array back to comma-string for your form logic
           });
         });
-        */
+        
+        toast.success(`Successfully generated ${questions.length} questions!`);
+        if (!isDescriptionLocked) setDescription(localDescription);
       } 
     } catch (error) {
-      console.error("AI Generation Error:", error);
+      toast.error(error.response?.data?.message || "AI Generation failed");
     } finally {
       setLoading(false);
     }
@@ -93,34 +71,24 @@ const AiQuestionModal = ({
     <Modal show={show} onHide={handleClose} centered size="lg">
       <Modal.Header closeButton className="border-0 pb-0">
         <Modal.Title className="fw-bold d-flex align-items-center gap-2" style={{ color: "#1C437F" }}>
-          <img src={StarIcon} alt="AI" width="24" />
-          Generate with AI
+          <img src={StarIcon} alt="AI" width="24" /> Generate with AI
         </Modal.Title>
       </Modal.Header>
-
       <Modal.Body className="pt-4">
-        
-        {/* --- Controls Row --- */}
         <div className="p-3 bg-light rounded border mb-4">
             <div className="mb-2">
                 <strong>Target Subject: </strong>
                 <span className="text-primary fw-bold">{section || "General"}</span>
             </div>
-
             <Row className="g-3">
-                {/* Question Limit Input */}
                 <Col md={6}>
                     <Form.Label className="fw-semibold small">Number of Questions</Form.Label>
                     <Form.Control 
-                        type="number" 
-                        min="1" 
-                        max="20"
+                        type="number" min="1" max="20"
                         value={localLimit}
-                        onChange={(e) => setLocalLimit(parseInt(e.target.value) || 0)}
+                        onChange={(e) => setLocalLimit(parseInt(e.target.value) || 1)}
                     />
                 </Col>
-
-                {/* Question Type Select - UPDATED */}
                 <Col md={6}>
                     <Form.Label className="fw-semibold small">Question Type</Form.Label>
                     <Form.Select 
@@ -134,47 +102,20 @@ const AiQuestionModal = ({
                 </Col>
             </Row>
         </div>
-
-        {/* --- Description Input --- */}
         <div className="mb-3">
-          <Form.Label className="fw-semibold">
-            Description / Prompt <span className="text-danger">*</span>
-          </Form.Label>
+          <Form.Label className="fw-semibold">Description / Prompt <span className="text-danger">*</span></Form.Label>
           <Form.Control
-            as="textarea"
-            rows={5}
-            placeholder="e.g. Create intermediate level questions..."
+            as="textarea" rows={5}
+            placeholder="e.g. Create intermediate level questions about financial accounting principles..."
             value={localDescription}
             onChange={(e) => setLocalDescription(e.target.value)}
             disabled={isDescriptionLocked} 
-            style={{ 
-                resize: "none", 
-                backgroundColor: isDescriptionLocked ? "#e9ecef" : "#fff" 
-            }}
+            style={{ resize: "none", backgroundColor: isDescriptionLocked ? "#f8f9fa" : "#fff" }}
           />
-          <Form.Text className="text-muted">
-            {isDescriptionLocked 
-                ? "Description is locked based on the test settings." 
-                : "The more specific your description, the better the questions will be."}
-          </Form.Text>
         </div>
-
-        {/* --- Footer Buttons --- */}
         <div className="d-flex justify-content-end gap-2 mt-4">
-          <Button 
-            variant="secondary" 
-            onClick={handleClose}
-            style={{ backgroundColor: "#A0AAB5", border: "none" }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={handleGenerate}
-            style={{ backgroundColor: "#1C437F", border: "none" }}
-            className="d-flex align-items-center gap-2"
-          >
-            <img src={StarIcon} alt="" width="16" style={{ filter: "brightness(0) invert(1)" }}/>
+          <Button variant="secondary" onClick={handleClose} style={{ backgroundColor: "#A0AAB5", border: "none" }}>Cancel</Button>
+          <Button variant="primary" onClick={handleGenerate} style={{ backgroundColor: "#1C437F", border: "none" }}>
             Generate Questions
           </Button>
         </div>
