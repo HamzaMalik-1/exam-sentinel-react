@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   Clock, HelpCircle, AlertTriangle, User, Briefcase, ShieldAlert, CheckCircle, RefreshCw
@@ -13,7 +13,7 @@ const ExamIntro = () => {
   const [examData, setExamData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // ✅ UI State for real-time feedback
+  // ✅ Extension Blocking State
   const [extensionsDetected, setExtensionsDetected] = useState(false);
   const [detectedList, setDetectedList] = useState([]);
   const [isChecking, setIsChecking] = useState(true);
@@ -28,7 +28,7 @@ const ExamIntro = () => {
     "Do not switch tabs or windows."
   ];
 
-  // 1. Define Rules globally for reuse in both Interval and handleStart
+  // 1. Rules based on fingerprints seen in your DevTools
   const EXTENSION_RULES = [
     { 
       name: "Grammarly", 
@@ -48,63 +48,69 @@ const ExamIntro = () => {
     }
   ];
 
-  // 2. The Core Detection Logic (Returns boolean for synchronous checks)
-  const runSecurityScan = () => {
+  // 2. The Core Detection Logic (Optimized to prevent infinite re-render loops)
+  const runSecurityScan = useCallback((updateState = true) => {
     let found = [];
     
-    // Layer A: Check DOM Elements for fingerprints
+    // Check DOM Elements
     EXTENSION_RULES.forEach(rule => {
       if (document.querySelector(rule.selector)) {
         found.push(rule.name);
       }
     });
 
-    // Layer B: Check Body Attributes (Crucial for catching Grammarly Desktop)
+    // Check Body Attributes (Specific for Grammarly Desktop)
     const body = document.body;
-    if (
+    const hasAttributes = 
         body.hasAttribute('data-gr-ext-installed') || 
         body.hasAttribute('data-new-gr-c-s-check-loaded') ||
-        body.hasAttribute('data-gr-ext-disabled') ||
-        body.classList.contains('gr-contextmenu')
-    ) {
-        if (!found.includes("Grammarly")) found.push("Grammarly");
+        body.classList.contains('gr-contextmenu');
+
+    if (hasAttributes && !found.includes("Grammarly")) {
+        found.push("Grammarly");
     }
 
-    // Layer C: Update States for UI feedback
-    const isIllegal = found.length > 0;
-    setExtensionsDetected(isIllegal);
-    setDetectedList([...new Set(found)]);
-    setIsChecking(false);
+    const isFound = found.length > 0;
 
-    return isIllegal;
-  };
+    if (updateState) {
+        // ✅ CRITICAL FIX: Only update state if values actually changed.
+        // This prevents the MutationObserver from triggering infinite loops.
+        setExtensionsDetected(prev => (prev !== isFound ? isFound : prev));
+        setDetectedList(prev => {
+            const newList = [...new Set(found)];
+            return JSON.stringify(prev) !== JSON.stringify(newList) ? newList : prev;
+        });
+        setIsChecking(false);
+    }
+
+    return isFound;
+  }, []);
 
   useEffect(() => {
     fetchExamInfo();
     runSecurityScan();
 
-    // ✅ RECURRING CHECK: Runs every 1 second
-    // Ensures that re-enabling an extension locks the UI almost instantly
+    // ✅ Layer 1: High-frequency polling (Every 1.5 seconds)
     const scannerId = setInterval(() => {
         runSecurityScan();
-    }, 1000);
+    }, 1500);
 
-    // ✅ REAL-TIME MONITORING: Reacts to DOM injections
-    observerRef.current = new MutationObserver(() => {
-      runSecurityScan();
+    // ✅ Layer 2: Mutation Observer (Watch ONLY child additions to avoid freeze)
+    observerRef.current = new MutationObserver((mutations) => {
+        const wasAdded = mutations.some(m => m.addedNodes.length > 0);
+        if (wasAdded) runSecurityScan();
     });
 
-    observerRef.current.observe(document.documentElement, {
+    observerRef.current.observe(document.body, {
       childList: true,
-      subtree: true,
-      attributes: true
+      subtree: true
     });
 
     return () => {
       if (observerRef.current) observerRef.current.disconnect();
       clearInterval(scannerId);
     };
-  }, [id]);
+  }, [id, runSecurityScan]);
 
   const fetchExamInfo = async () => {
     try {
@@ -122,16 +128,14 @@ const ExamIntro = () => {
   };
 
   const handleStart = () => {
-    // ✅ HARD SYNC CHECK: Final gatekeeper
-    // Executes a fresh scan at the exact millisecond of the click
-    const isSecurityViolation = runSecurityScan();
+    // ✅ Layer 3: Hard Synchronous Check on Click
+    const isSecurityViolation = runSecurityScan(false);
 
     if (isSecurityViolation) {
-      toast.error(`Security Violation! Disable: ${detectedList.join(", ")}`);
+      toast.error(`Security Violation! Active tools detected: ${detectedList.join(", ")}`);
       return;
     }
 
-    // Only proceed if the environment is strictly clean
     navigate(`/student/exam/${id}/start`); 
   };
 
@@ -141,7 +145,7 @@ const ExamIntro = () => {
     <div className="min-vh-100 bg-light py-5">
       <Container style={{ maxWidth: "900px" }}>
         
-        {/* ✅ THE BAIT: These force Grammarly/AI to "wake up" and inject code */}
+        {/* ✅ THE BAIT: Forces extensions to "wake up" and inject code so we can find them */}
         <div style={{ position: 'absolute', opacity: 0, height: 0, overflow: 'hidden' }}>
             <textarea defaultValue="Triggering extension scan..." />
             <input type="text" defaultValue="Security verification..." />
@@ -192,6 +196,7 @@ const ExamIntro = () => {
           </Card.Body>
         </Card>
 
+        {/* GUIDELINES CARD */}
         <Card className="border-0 shadow-sm rounded-4 mb-4">
           <Card.Body className="p-4">
              <Row className="g-3 mb-4">
@@ -218,28 +223,14 @@ const ExamIntro = () => {
                    </div>
                 </Col>
              </Row>
-
-             <h6 className="fw-bold mb-3">Guidelines</h6>
-             <ul className="list-unstyled text-secondary">
-                {HARD_CODED_GUIDELINES.map((guideline, index) => (
-                  <li key={index} className="d-flex align-items-start gap-2 mb-2">
-                    <div className="mt-2 bg-secondary rounded-circle" style={{ width: "6px", height: "6px", minWidth: "6px" }}></div>
-                    <span>{guideline}</span>
-                  </li>
-                ))}
-             </ul>
           </Card.Body>
         </Card>
 
-        {/* --- DYNAMIC START BUTTON --- */}
+        {/* START BUTTON CARD */}
         <Card className={`border-0 shadow-sm rounded-4 text-center py-5 ${extensionsDetected ? 'bg-light' : 'bg-white'}`}>
             <Card.Body>
               <h4 className="fw-bold mb-2">Ready to Begin?</h4>
-              <p className="text-muted mb-4">
-                {extensionsDetected 
-                    ? "The assessment is locked. Please turn off extensions to proceed." 
-                    : "Once started, the timer cannot be paused."}
-              </p>
+              <p className="text-muted mb-4">Once started, the timer cannot be paused.</p>
               
               <Button 
                 size="lg" 
