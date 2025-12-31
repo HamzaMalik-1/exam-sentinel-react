@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form'; 
-import { z } from 'zod';                   
-import { zodResolver } from '@hookform/resolvers/zod'; 
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast'; // ✅ Import Toast
+import axiosInstance from '../api/axiosInstance'; // ✅ Import API
 
-// --- UPDATED VALIDATION SCHEMA ---
+// --- VALIDATION SCHEMA ---
+// Note: For Login, we usually don't enforce strict regex patterns (like uppercase/symbol)
+// to prevent frustrating users who might have old passwords. We just check if it's not empty.
 const loginSchema = z.object({
   email: z
     .string()
@@ -13,18 +17,13 @@ const loginSchema = z.object({
   
   password: z
     .string()
-    .min(8, { message: "Password must be at least 8 characters" })
-    .regex(/[A-Z]/, { message: "Must contain at least one uppercase letter" })
-    .regex(/[a-z]/, { message: "Must contain at least one lowercase letter" })
-    .regex(/[0-9]/, { message: "Must contain at least one number" })
-    .regex(/[\W_]/, { message: "Must contain at least one special character (!@#$)" }),
+    .min(1, { message: "Password is required" }),
 });
 
 const Login = () => {
   const navigate = useNavigate();
   
   const [isLoading, setIsLoading] = useState(false);
-  const [serverError, setServerError] = useState('');
 
   const { 
     register, 
@@ -35,28 +34,41 @@ const Login = () => {
   });
 
   const onSubmit = async (data) => {
-    setServerError('');
     setIsLoading(true);
 
-    setTimeout(() => {
-      const { email } = data; 
-      
-      let detectedRole = 'student'; 
-      if (email.includes('teacher') || email.includes('admin')) {
-        detectedRole = 'teacher';
-      }
+    try {
+      // ✅ 1. Call API
+      const response = await axiosInstance.post('/auth/login', {
+        email: data.email,
+        password: data.password
+      });
 
-      localStorage.setItem('userRole', detectedRole);
+      const { token, role, firstName, lastName, email } = response.data.data;
+
+      // ✅ 2. Save Session Data
+      localStorage.setItem('token', token);
+      localStorage.setItem('userRole', role);
       localStorage.setItem('userEmail', email);
+      localStorage.setItem('userName', `${firstName} ${lastName}`);
 
-      if (detectedRole === 'teacher') {
-        navigate('/teacher');
+      toast.success("Login Successful!");
+
+      // ✅ 3. Redirect based on Role
+      if (role === 'teacher' || role === 'admin') {
+        navigate('/teacher/exams');
       } else {
-        navigate('/student');
+        navigate('/student/exams');
       }
+
+    } catch (error) {
+      console.error("Login Error:", error);
+      const errorMsg = error.response?.data?.message || "Invalid email or password";
       
+      // Show error toast
+      toast.error(errorMsg);
+    } finally {
       setIsLoading(false);
-    }, 1000); 
+    }
   };
 
   return (
@@ -68,7 +80,6 @@ const Login = () => {
           <h1 className="text-brand" style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
             ExamSentinel
           </h1>
-          {/* Direct variable usage ensures this subtitle also switches correctly */}
           <p style={{ color: 'var(--text-muted)', margin: 0 }}>Secure AI-Powered Examination</p>
         </div>
 
@@ -108,14 +119,6 @@ const Login = () => {
             )}
           </div>
 
-          {serverError && (
-            <div style={{ padding: '10px', background: 'rgba(220, 38, 38, 0.1)', borderRadius: '6px' }}>
-              <p className="text-danger" style={{ fontSize: '0.9rem', textAlign: 'center', margin: 0 }}>
-                {serverError}
-              </p>
-            </div>
-          )}
-
           <button 
             type="submit" 
             className="btn-primary" 
@@ -126,11 +129,15 @@ const Login = () => {
           </button>
         </form>
 
-        {/* --- THE FIX IS HERE --- */}
         <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.85rem' }}>
-          {/* We use inline style to force the variable usage */}
           <span style={{ color: 'var(--text-muted)' }}>Don't have an account? </span>
-          <span onClick={()=> navigate('/signup')} className="link-text" style={{ cursor: 'pointer', marginLeft: '5px' }}>Register</span>
+          <span 
+            onClick={() => navigate('/signup')} 
+            className="link-text" 
+            style={{ cursor: 'pointer', marginLeft: '5px' }}
+          >
+            Register
+          </span>
         </div>
 
       </div>

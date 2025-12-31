@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import toast from 'react-hot-toast'; // ✅ Import Toast
+import axiosInstance from '../api/axiosInstance'; // Ensure path is correct
 
 // --- VALIDATION SCHEMA ---
 const signupSchema = z.object({
@@ -12,7 +14,7 @@ const signupSchema = z.object({
   role: z.enum(["student", "teacher"], { message: "Please select a role" }),
   password: z
     .string()
-    .min(8, { message: "Min 8 chars" }) // Shortened message for side-by-side layout
+    .min(8, { message: "Min 8 chars" })
     .regex(/[A-Z]/, { message: "Needs uppercase" })
     .regex(/[a-z]/, { message: "Needs lowercase" })
     .regex(/[0-9]/, { message: "Needs number" })
@@ -38,29 +40,46 @@ const Signup = () => {
     }
   });
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     setIsLoading(true);
 
-    // --- MOCK REGISTRATION LOGIC ---
-    setTimeout(() => {
-      console.log("Registered User:", data);
-      
-      // Save to localStorage so they can log in immediately
-      localStorage.setItem('userRole', data.role);
-      localStorage.setItem('userEmail', data.email);
-      // Combine names for display
-      localStorage.setItem('userName', `${data.firstName} ${data.lastName}`);
+    try {
+      // 1. Call the API
+      const response = await axiosInstance.post('/auth/signup', {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        password: data.password,
+        role: data.role
+      });
 
-      alert("Account created successfully!");
-      navigate('/'); // Redirect to Login page
+      console.log("Registered User:", response.data);
+      const { token, role, firstName, lastName, email } = response.data.data;
+
+      // 2. Save Data to LocalStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('userRole', role);
+      localStorage.setItem('userEmail', email);
+      localStorage.setItem('userName', `${firstName} ${lastName}`);
+
+      // ✅ 3. Success Toast & Redirect
+      toast.success("Account created successfully!");
+      navigate('/'); 
       
+    } catch (error) {
+      console.error("Signup Error:", error);
+      
+      const errorMsg = error.response?.data?.message || "Something went wrong. Please try again.";
+      
+      // ✅ 4. Error Toast
+      toast.error(errorMsg);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '90vh', padding: '20px' }}>
-      {/* Increased maxWidth slightly to 500px to accommodate side-by-side inputs better */}
       <div className="card-box" style={{ maxWidth: '500px', width: '100%' }}>
         
         {/* Header */}
@@ -73,9 +92,8 @@ const Signup = () => {
 
         <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           
-          {/* --- ROW 1: First Name & Last Name (Side by Side) --- */}
+          {/* --- ROW 1: First Name & Last Name --- */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-            {/* First Name */}
             <div>
               <label htmlFor="firstName">First Name</label>
               <input 
@@ -86,7 +104,6 @@ const Signup = () => {
               {errors.firstName && <p className="text-danger" style={{ fontSize: '0.8rem', marginTop: '4px' }}>{errors.firstName.message}</p>}
             </div>
 
-            {/* Last Name */}
             <div>
               <label htmlFor="lastName">Last Name</label>
               <input 
@@ -114,15 +131,14 @@ const Signup = () => {
           <div>
             <label htmlFor="role">I am a...</label>
             <select id="role" {...register("role")} style={{ cursor: 'pointer' }}>
-              <option value="student">Student (Taking Exams)</option>
-              <option value="teacher">Teacher (Creating Exams)</option>
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
             </select>
             {errors.role && <p className="text-danger" style={{ fontSize: '0.85rem', marginTop: '4px' }}>{errors.role.message}</p>}
           </div>
 
-          {/* --- ROW 2: Password & Confirm Password (Side by Side) --- */}
+          {/* --- ROW 2: Password & Confirm Password --- */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-            {/* Password */}
             <div>
               <label htmlFor="password">Password</label>
               <input 
@@ -134,7 +150,6 @@ const Signup = () => {
               {errors.password && <p className="text-danger" style={{ fontSize: '0.8rem', marginTop: '4px' }}>{errors.password.message}</p>}
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword">Confirm</label>
               <input 

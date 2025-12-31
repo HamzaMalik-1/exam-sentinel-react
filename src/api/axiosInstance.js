@@ -1,9 +1,11 @@
 import axios from "axios";
-import toast from "react-hot-toast"; // Ensure you have installed: npm install react-hot-toast
+import toast from "react-hot-toast";
 
 // --- 1. Create Axios Instance ---
 const axiosInstance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000/api",
+  // FIX: Use import.meta.env for Vite. 
+  // Make sure your .env variable is named VITE_API_URL
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
   },
@@ -30,7 +32,7 @@ axiosInstance.interceptors.response.use(
     // Handle 401 Unauthorized (Auto Logout)
     if (error.response && error.response.status === 401) {
       localStorage.clear();
-      // Optional: Force reload or redirect to login
+      // Optional: Force reload to clear state
       // window.location.href = "/";
     }
     return Promise.reject(error);
@@ -39,18 +41,7 @@ axiosInstance.interceptors.response.use(
 
 /**
  * --- 4. Main API Wrapper Function ---
- * Handles: 
- * - API Calls
- * - Toast Notifications (Success/Fail) based on 'message'
- * - Navigation on Success
- * * @param {Object} params
- * @param {string} params.method - 'GET', 'POST', 'PUT', 'DELETE'
- * @param {string} params.url - Endpoint URL
- * @param {Object} [params.data] - Payload for POST/PUT
- * @param {Object} [params.params] - Query params for GET
- * @param {boolean} [params.isToast=true] - Show toast on success/error?
- * @param {Function} [params.navigate] - The navigate function from useNavigate()
- * @param {string} [params.successPath] - Path to redirect to on success
+ * Handles API Calls, Toast Notifications, and Navigation
  */
 export const apiCall = async ({
   method = "GET",
@@ -62,7 +53,6 @@ export const apiCall = async ({
   successPath = null,
 }) => {
   try {
-    // Make the request
     const response = await axiosInstance({
       method,
       url,
@@ -70,16 +60,14 @@ export const apiCall = async ({
       params,
     });
 
-    const resData = response.data; // Expected: { status, success, message, ...data }
+    const resData = response.data; // Expected: { success, message, data }
 
     // --- HANDLE SUCCESS ---
     if (resData.success) {
-      // 1. Show Success Toast
       if (isToast && resData.message) {
         toast.success(resData.message);
       }
 
-      // 2. Navigate if provided
       if (navigate && successPath) {
         navigate(successPath);
       }
@@ -87,12 +75,12 @@ export const apiCall = async ({
       return resData;
     } 
     
-    // --- HANDLE LOGICAL FAILURE (success: false) ---
+    // --- HANDLE LOGICAL FAILURE ---
     else {
       if (isToast && resData.message) {
         toast.error(resData.message);
       }
-      return null; // Or throw error depending on preference
+      return null; 
     }
 
   } catch (error) {
