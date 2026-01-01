@@ -52,9 +52,13 @@ const Login = () => {
       localStorage.setItem('userName', `${firstName} ${lastName}`);
 
       toast.success("Login Successful!");
+if(role === 'admin')
+{
+  navigate('/admin/classes');
 
+}
       // ✅ 3. Redirect based on Role
-      if (role === 'teacher' || role === 'admin') {
+    else  if (role === 'teacher') {
         navigate('/teacher/exams');
       } else {
         navigate('/student/exams');

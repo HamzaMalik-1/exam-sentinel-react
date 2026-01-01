@@ -10,6 +10,14 @@ const Navbar = ({ theme, toggleTheme }) => {
         justifyContent: 'space-between', 
         alignItems: 'center',
         padding: '1rem 2rem',
+        // --- Added for Sticky Top ---
+        position: 'sticky',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000, // Ensures it stays above page content
+        backgroundColor: 'var(--bg-card)', // Ensure it has a solid background
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)', // Optional: subtle shadow for depth
         marginBottom: '2rem'
     }}>
       {/* Click Logo to go Home */}
@@ -21,9 +29,7 @@ const Navbar = ({ theme, toggleTheme }) => {
         <h3 className="text-title" style={{ margin: 0 }}>ExamSentinel</h3>
       </div>
       
-      <button onClick={toggleTheme} className="btn-toggle" style={{ fontSize: '0.9rem' }}>
-        {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
-      </button>
+      {/* Optional: Navigation items could go here */}
     </nav>
   );
 };

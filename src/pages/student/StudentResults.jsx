@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Search, 
-  Calendar, 
-  ChevronRight,
-  School
-} from "lucide-react";
+import { Search, Calendar, ChevronRight, School } from "lucide-react";
 import { Card, Table, Form, InputGroup, ProgressBar, Spinner } from "react-bootstrap";
 import axiosInstance from "../../api/axiosInstance";
 import toast from 'react-hot-toast';
@@ -16,7 +11,6 @@ const StudentResults = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // --- FETCH DATA FROM BACKEND ---
   useEffect(() => {
     fetchResults();
   }, []);
@@ -24,7 +18,7 @@ const StudentResults = () => {
   const fetchResults = async () => {
     try {
       setIsLoading(true);
-      // Matches: router.get("/my-results", protect, getMyResults);
+      // Fetches the formatted results containing className, testName, and percentage
       const res = await axiosInstance.get("/student/my-results");
       if (res.data.success) {
         setResults(res.data.data);
@@ -37,10 +31,10 @@ const StudentResults = () => {
     }
   };
 
-  // --- SEARCH FILTERING ---
   const filteredResults = useMemo(() => {
     return results.filter(item => 
-      item.testName.toLowerCase().includes(searchQuery.toLowerCase())
+      item.testName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.className.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [searchQuery, results]);
 
@@ -60,15 +54,13 @@ const StudentResults = () => {
 
   return (
     <div className="container-fluid p-4">
-      {/* --- HEADER --- */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h3 className="fw-bold" style={{ color: "#1C437F" }}>My Results</h3>
-          <p className="text-muted mb-0">View your performance and test details.</p>
+          <p className="text-muted mb-0">View your performance and detailed test reports.</p>
         </div>
       </div>
 
-      {/* --- SEARCH --- */}
       <Card className="border-0 shadow-sm rounded-4 mb-4">
         <Card.Body>
            <InputGroup>
@@ -77,7 +69,7 @@ const StudentResults = () => {
               </InputGroup.Text>
               <Form.Control 
                  type="text" 
-                 placeholder="Search by test name..." 
+                 placeholder="Search by test or class name..." 
                  className="bg-light border-start-0 shadow-none"
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
@@ -86,7 +78,6 @@ const StudentResults = () => {
         </Card.Body>
       </Card>
 
-      {/* --- TABLE --- */}
       <Card className="border-0 shadow-sm rounded-4">
         <Card.Body className="p-0">
           <Table hover responsive className="mb-0 align-middle">
@@ -94,10 +85,10 @@ const StudentResults = () => {
               <tr>
                 <th className="py-3 ps-4">Class</th>
                 <th className="py-3">Test Name</th>
-                <th className="py-3">Submission Date</th>
-                <th className="py-3">Score</th>
-                <th className="py-3">Percentage</th>
-                <th className="py-3 text-end pe-4">Action</th>
+                <th className="py-3 text-center">Date</th>
+                <th className="py-3 text-center">Score</th>
+                <th className="py-3">Performance</th>
+                <th className="py-3 text-end pe-4">Details</th>
               </tr>
             </thead>
             <tbody>
@@ -123,13 +114,13 @@ const StudentResults = () => {
                       <td>
                          <span className="fw-medium text-secondary">{exam.testName}</span>
                       </td>
-                      <td className="text-muted">
-                         <div className="d-flex align-items-center gap-2">
+                      <td className="text-center text-muted">
+                         <div className="d-flex align-items-center justify-content-center gap-2">
                             <Calendar size={14} />
                             {exam.submissionDate}
                          </div>
                       </td>
-                      <td>
+                      <td className="text-center">
                          <span className="fw-bold text-dark">{exam.obtainedMarks}</span>
                          <span className="text-muted small"> / {exam.totalMarks}</span>
                       </td>
@@ -154,7 +145,7 @@ const StudentResults = () => {
               ) : (
                 <tr>
                   <td colSpan="6" className="text-center py-5 text-muted">
-                    No completed exams found.
+                    No results found matching your search.
                   </td>
                 </tr>
               )}
